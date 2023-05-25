@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Listagem de Alunos</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .buttons {
+      display: flex;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Listagem de Alunos</h1>
+  <table>
+    <tr>
+      <th>Nome</th>
+      <th>Data de Nascimento</th>
+      <th>Matrícula</th>
+      <th>Status</th>
+      <th>E-mail</th>
+      <th>Ações</th>
+    </tr>
+    <% alunos.forEach(function(aluno) { %>
+      <tr>
+        <td><%= aluno.nome %></td>
+        <td><%= aluno.dataNascimento %></td>
+        <td><%= aluno.matricula %></td>
+        <td><%= aluno.status %></td>
+        <td><%= aluno.email %></td>
+        <td class="buttons">
+          <form method="GET" action="/editar/<%= aluno.id %>">
+            <button type="submit">Editar</button>
+          </form>
+          <form method="GET" action="/excluir/<%= aluno.id %>">
+            <button type="submit">Excluir</button>
+          </form>
+        </td>
+      </tr>
+    <% }); %>
+  </table>
+  <form method="GET" action="/novo">
+    <button type="submit">Cadastrar Novo Aluno</button>
+  </form>
+</body>
+</html>
