@@ -11,22 +11,21 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   try {
-    const { search } = req.query;
+    const { pesquisar } = req.query; // adição do parâmetro "pesquisar" para pesquisar o nome de um aluno específico na tabela.
 
     let alunos;
-    if (search) {
+    if (pesquisar) {
       alunos = await Aluno.findAll({
         where: {
           nome: {
-            [Op.like]: `${search}%`,
+            [Op.like]: `${pesquisar}%`,
           },
         },
       });
     } else {
       alunos = await Aluno.findAll();
     }
-
-    res.render("listagem", { alunos, search });
+    res.render("listagem", { alunos, pesquisar });
   } catch (error) {
     console.error(error);
     res.status(500).send("Erro ao carregar os alunos.");
