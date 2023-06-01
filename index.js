@@ -1,87 +1,108 @@
-const express = require("express");
+import express from "express";
+import database from "./db.js";
+import ejs from "ejs";
+import Aluno from "./aluno.js";
+import { Op } from "sequelize";
+
 const app = express();
-const ejs = require("ejs");
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 
-let alunos = [
-  {
-    id: 1,
-    nome: "João",
-    dataNascimento: "1990-01-01",
-    matricula: "2021001",
-    status: "Ativo",
-    email: "joao@example.com",
-  },
-  {
-    id: 2,
-    nome: "Maria",
-    dataNascimento: "1992-02-02",
-    matricula: "2021002",
-    status: "Inativo",
-    email: "maria@example.com",
-  },
-];
+app.get("/", async (req, res) => {
+  try {
+    const { search } = req.query;
 
-app.get("/", (req, res) => {
-  res.render("listagem", { alunos });
-});
+    let alunos;
+    if (search) {
+      alunos = await Aluno.findAll({
+        where: {
+          nome: {
+            [Op.like]: `${search}%`,
+          },
+        },
+      });
+    } else {
+      alunos = await Aluno.findAll();
+    }
 
-app.get("/editar/:id", (req, res) => {
-  const aluno = alunos.find((a) => a.id === parseInt(req.params.id));
-  if (aluno) {
-    res.render("cadastro", { aluno });
-  } else {
-    res.redirect("/");
+    res.render("listagem", { alunos, search });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro ao carregar os alunos.");
   }
 });
 
-app.get("/excluir/:id", (req, res) => {
-  alunos = alunos.filter((a) => a.id !== parseInt(req.params.id));
-  res.redirect("/");
+app.get("/editar/:id", async (req, res) => {
+  const alunoId = parseInt(req.params.id);
+  try {
+    const aluno = await Aluno.findByPk(alunoId);
+    if (aluno) {
+      res.render("cadastro", { aluno });
+    } else {
+      res.redirect("/");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro ao carregar o aluno.");
+  }
+});
+
+app.get("/excluir/:id", async (req, res) => {
+  const alunoId = parseInt(req.params.id);
+  try {
+    await Aluno.destroy({ where: { id: alunoId } });
+    res.redirect("/");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro ao excluir o aluno.");
+  }
 });
 
 app.get("/novo", (req, res) => {
   res.render("cadastro", { aluno: null });
 });
 
-app.post("/salvar", (req, res) => {
+app.post("/salvar", async (req, res) => {
   const { id, nome, dataNascimento, matricula, status, email } = req.body;
 
-  const matriculaExistente = alunos.find(aluno => aluno.matricula === matricula);
-  if (matriculaExistente && (!id || matriculaExistente.id !== parseInt(id))) {
-    res.send('Já existe um aluno com essa matrícula.');
-    return;
-  }
+  try {
+    let aluno;
 
-  if (id) {
-    const index = alunos.findIndex((a) => a.id === parseInt(id));
-    if (index !== -1) {
-      alunos[index] = {
-        id: parseInt(id),
+    if (id) {
+      aluno = await Aluno.findByPk(parseInt(id));
+      if (aluno) {
+        await aluno.update({
+          nome,
+          dataNascimento,
+          matricula,
+          status,
+          email,
+        });
+      }
+    } else {
+      aluno = await Aluno.create({
         nome,
         dataNascimento,
         matricula,
         status,
         email,
-      };
+      });
     }
-  } else {
-    const novoAluno = {
-      id: alunos.length + 1,
-      nome,
-      dataNascimento,
-      matricula,
-      status,
-      email,
-    };
-    alunos.push(novoAluno);
-  }
 
-  res.redirect("/");
+    res.redirect("/");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro ao salvar o aluno.");
+  }
 });
 
-app.listen(7777, () => {
-  console.log("Porta do server: 7777.");
+app.listen(3000, async () => {
+  try {
+    await database.sync();
+    console.log("Conexão com o banco de dados estabelecida.");
+    console.log("Porta do server: 3000");
+  } catch (error) {
+    console.error("Erro ao conectar-se ao banco de dados:", error);
+  }
 });
